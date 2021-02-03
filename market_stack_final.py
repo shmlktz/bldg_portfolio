@@ -11,11 +11,11 @@ import sqlalchemy
 
 ms_access_key = "3fe199c40e9ae83814d59ae34e9e80d1"
 
-print("\n\nHello and welcome to the Stock Data Supplier\n")
-users_name = input("First off, what is your name? ")
+print("\n\nHello and welcome to the Stock Market Data Supplier\n")
+users_name = input("First, what is your name? ")
 api_key_q = input(f"\nHi {users_name}, do you have an API access_key from MarketStack? ('y' or 'n') ")
 if (api_key_q == "y") or (api_key_q == "Y"):
-  user_api_key = input("\nPlease enter your API access_key (NOTE: if you mistype it, the program will not run)")
+  user_api_key = input("\nPlease enter your API access_key (NOTE: if you mistype it, the program will not run properly) ")
   ms_access_key = user_api_key
 else:
   print("\nNo worries, we'll supply the house code")
@@ -42,30 +42,31 @@ params = {
 #api_result = requests.get(f'http://api.marketstack.com/v1/tickers/{ticker}/{cat}', params)
 #api_response = api_result.json() #run to json the api_result
 
-print("\n**Housekeeping Notice** This engine is currently landing\n\n")
-
 test_r_o = requests.get(f'http://api.marketstack.com/v1/{cat}', params)
 test_json = test_r_o.json()
 
-print("\nprinting JSON object", test_json,"\n\n")
-print("\nprinting Response object:", test_r_o,"\n\n")
-#Achieved a custom intraday URL: http://api.marketstack.com/v1/intraday/2020-07-25?access_key=3fe199c40e9ae83814d59ae34e9e80d1&symbols=amzn
+print("\n**Checking Status**")
+print("response object status:", test_r_o)
 
+#Achieved a custom intraday URL: http://api.marketstack.com/v1/intraday/2020-07-25?access_key=3fe199c40e9ae83814d59ae34e9e80d1&symbols=amzn
+if str(test_r_o) != "<Response [200]>":
+  print("Result: Assuming an error\nPrinting the JSON object for troubleshooting purposes:\n"+str(test_json),"\n\n")
+else:
+  print("Result: The API request seems to have gone through & returned data successfully\n(That is the meaning of a 200 Response)\n")
 
 ###Setting the dataframe###
 
 df = pd.io.json.json_normalize(test_json["data"])
 # df_2 = pd.DataFrame.from_dict(test_r_o.json()["data"]["eod"])
 
-print("\nprinting data frame\n\n", df)
+print(df, "\n\nPrinted above is the DataFrame (df)")
 
 def df_to_sql():
   ####Setting up the Pandas DataFrame to MySQL exchange####
   host = "localhost"
   db = "this_base"
   user = "root"
-  pw = "this is parnasa"
-  #pw = input(f"Please enter the {hostname} password: ")
+  pw = input(f"Please enter the {host} password: ")
 
   ##Create SQLAlchemy engine to connect to MySQL Database
   engine = create_engine(f"mysql+pymysql://{user}:{pw}@{host}/{db}")
@@ -84,7 +85,7 @@ def df_to_sql():
   df.to_sql(f"{table_name}", engine, if_exists = f"{fail_replace_append}", index = True, index_label = "#") #schema = None, if_exists = "fail", index = True, index_label = "index_label_test" ## ,chunksize=None, dtype= None, method = None)
   print("Completed data push attempt. Please check the MySQL server for results")
 
-if (input("do you want to push this data to MySQL? ('y' or 'n') ") == "y"):
+if (input("\nDo you want to push this data to MySQL? ('y' or 'n') ") == "y"):
   df_to_sql()
 else:
   print("ok, data not being pushed")
