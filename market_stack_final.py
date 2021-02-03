@@ -61,15 +61,19 @@ df = pd.io.json.json_normalize(test_json["data"])
 
 print(df, "\n\nPrinted above is the DataFrame (df)")
 
+host = "localhost"
+db = "this_base"
+user = "root"
+pw = input(f"\nPlease enter the {host} password \
+for the database to send and receive data: ")
+
+##Create SQLAlchemy engine to connect to MySQL Database
+engine = create_engine(f"mysql+pymysql://{user}:{pw}@{host}/{db}")
+
 def df_to_sql():
   ####Setting up the Pandas DataFrame to MySQL exchange####
-  host = "localhost"
-  db = "this_base"
-  user = "root"
-  pw = input(f"Please enter the {host} password: ")
-
-  ##Create SQLAlchemy engine to connect to MySQL Database
-  engine = create_engine(f"mysql+pymysql://{user}:{pw}@{host}/{db}")
+  
+  global table_name
   table_name = input("\nWhat is the name of the table you'll save this as? ")
   table_options = ['fail', 'replace', 'append']
   table_options_plus = {"fail": f"if '{table_name}' already exists, it will fail to store the data",\
@@ -84,25 +88,41 @@ def df_to_sql():
   print("\nBeginning data push..")
   df.to_sql(f"{table_name}", engine, if_exists = f"{fail_replace_append}", index = True, index_label = "#") #schema = None, if_exists = "fail", index = True, index_label = "index_label_test" ## ,chunksize=None, dtype= None, method = None)
   print("Completed data push attempt. Please check the MySQL server for results")
+  #return engine#, host, db, user, pw
 
 if (input("\nDo you want to push this data to MySQL? ('y' or 'n') ") == "y"):
   df_to_sql()
 else:
-  print("ok, data not being pushed")
+  print("\nOK, data not being pushed.")
+
+global d
+d = {}
+
+def sql_to_df():
+  #engine = df_to_sql()
+  #print('reading and printing the table just created')
+  data_pulls = int(input(f"\n{users_name}, how many tables would you like to pull from MySQL? "))
+  for pull in range(data_pulls):
+    new_df_name = "df__"+str(pull)
+    pull_table = input("From which table to pull from? ")
+    current_pulling_df = pd.read_sql_query(f'SELECT * FROM {pull_table}', con= engine)
+    #new_df = pd.read_sql_query(f'SELECT * FROM {table_name}', con= engine)
+    print()
+    d[f"df_{pull}"] = current_pulling_df
+    print(current_pulling_df)
+  print("\nHere is a dictionary of the data frames you've pulled:\n")
+  print(d)
+
+if (input("\nDo you want to pull tables from MySQL? ('y' or 'n') ") == "y"):
+  sql_to_df()
+else:
+  print("\nOK, data not being pulled.")
+
 
 ###Extra Features##
 ##feature blocks###
 
-#Pull stored db information here -->
-#pull_from_mysql_q = input("Would you like to pull the stock data from the db? ('y' or 'n') ")
-
-
-
-
-
-
-
-
+##__no remaining extra features or feature blocks - congrats!__##
 
 
 ###Notes & learning
