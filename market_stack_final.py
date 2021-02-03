@@ -10,10 +10,12 @@ from sqlalchemy import create_engine
 import sqlalchemy
 
 ms_access_key = "3fe199c40e9ae83814d59ae34e9e80d1"
+optional_date = ""
 
 print("\n\nHello and welcome to the Stock Market Data Supplier\n")
 users_name = input("First, what is your name? ")
-api_key_q = input(f"\nHi {users_name}, do you have an API access_key from MarketStack? ('y' or 'n') ")
+api_key_q = input(f"\nHi {users_name}, please understand that results will vary based on the account type,\n\
+Do you have an API access_key from MarketStack? ('y' or 'n') ")
 if (api_key_q == "y") or (api_key_q == "Y"):
   user_api_key = input("\nPlease enter your API access_key (NOTE: if you mistype it, the program will not run properly) ")
   ms_access_key = user_api_key
@@ -26,15 +28,39 @@ ticker = input(f"\n{users_name}, which ticker symbol(s) would you like to get da
 -For multiple ticker symbols please add a comma between tickers and do not add spaces, i.e. 'amzn,tsla,aapl,emms'\n") #^^ will need to data validate ^^ #maybe need to do a try and except block? #Want to make sure the ticker symbol entry desn't cause a great crash
 #will need to validate ^
 
-cat = input(f"\n{users_name}, which category of stock data are you looking for, end-of-day or intraday?\n\
+cat = input("Which category of stock data are you looking for, end-of-day or intraday?\n\
 ['eod' or 'intraday'] ") #^^ Will also need to data validate!
 
+pagination_limitation = input(f"\nHow many results would you like to see back?\n(MarketStack claims 1000 is the maximum) ") 
+
+set_date = input(f"\n{users_name}, would you like to\n\
+(1) let it run it's normal course of recent dates\
+(2) be specific about the dates it pulls\n\
+(3) soley pull the latest date?\n\
+(Choose '1', '2' or '3') ")
+if set_date == '1':
+  pass
+elif set_date == '3':
+  optional_date = '/latest'
+elif set_date == '2':
+  print("Dates that are not returned in the data are most likely weekends or holidays")
+  print("You are going to be prompted to endter a starting and ending date\n\
+  You may enter: both a starting and ending date, only a starting date")
+  date_from = input("\nWhat is the starting date? (YYYY-MM-DD or ISO-8601\
+  format (e.g. 2020-05-21T00:00:00+0000) ")
+  date_to = input("\nWhat is the ending date? (YYYY-MM-DD or ISO-8601\
+  format (e.g. 2020-05-21T00:00:00+0000) ")
 # date = input("Please input a date in YYYY-MM-DD or ISO-8601\
 # format (e.g. 2020-05-21T00:00:00+0000), or leave blank ")
 
 params = {
   'access_key': f'{ms_access_key}',
-  'symbols' : f'{ticker}'
+  'symbols' : f'{ticker}',
+  'limit' : {pagination_limitation},
+  'date_from' : f'{date_from}',
+  'date_to' : f'{date_to}'
+
+
 }
 
 ##Requesting the data from MarketStack's API##
@@ -42,7 +68,7 @@ params = {
 #api_result = requests.get(f'http://api.marketstack.com/v1/tickers/{ticker}/{cat}', params)
 #api_response = api_result.json() #run to json the api_result
 
-test_r_o = requests.get(f'http://api.marketstack.com/v1/{cat}', params)
+test_r_o = requests.get(f'http://api.marketstack.com/v1/{cat}{optional_date}', params)
 test_json = test_r_o.json()
 
 print("\n**Checking Status**")
@@ -52,7 +78,8 @@ print("response object status:", test_r_o)
 if str(test_r_o) != "<Response [200]>":
   print("Result: Assuming an error\nPrinting the JSON object for troubleshooting purposes:\n"+str(test_json),"\n\n")
 else:
-  print("Result: The API request seems to have gone through & returned data successfully\n(That is the meaning of a 200 Response)\n")
+  print("Result: Assuming (based on the response of '200' which means 'OK') the API request has successfully gone through & returned data\n\
+  NOTE: returning a blank set of results will not necessarily result in an error")
 
 ###Setting the dataframe###
 
@@ -86,7 +113,7 @@ def df_to_sql():
   else:
     fail_replace_append = "fail"
   print("\nBeginning data push..")
-  df.to_sql(f"{table_name}", engine, if_exists = f"{fail_replace_append}", index = True, index_label = "#") #schema = None, if_exists = "fail", index = True, index_label = "index_label_test" ## ,chunksize=None, dtype= None, method = None)
+  df.to_sql(f"{table_name}", engine, if_exists = f"{fail_replace_append}", index = True) #schema = None, if_exists = "fail", index = True, index_label = "index_label_test" ## ,chunksize=None, dtype= None, method = None)
   print("Completed data push attempt. Please check the MySQL server for results")
   #return engine#, host, db, user, pw
 
