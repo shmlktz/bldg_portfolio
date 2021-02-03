@@ -9,18 +9,31 @@ import pymysql
 from sqlalchemy import create_engine
 import sqlalchemy
 
-ticker = input("Which ticker symbol(s) would you like to get data on?\
-(please type the exact symbol)(for multiple tickers please add a comma and no spaces) ") #^^ will need to data validate ^^ #maybe need to do a try and except block? #Want to make sure the ticker symbol entry desn't cause a great crash
+ms_access_key = "3fe199c40e9ae83814d59ae34e9e80d1"
+
+print("\n\nHello and welcome to the Stock Data Supplier\n")
+users_name = input("First off, what is your name? ")
+api_key_q = input(f"\nHi {users_name}, do you have an API access_key from MarketStack? ('y' or 'n') ")
+if (api_key_q == "y") or (api_key_q == "Y"):
+  user_api_key = input("\nPlease enter your API access_key (NOTE: if you mistype it, the program will not run)")
+  ms_access_key = user_api_key
+else:
+  print("\nNo worries, we'll supply the house code")
+  
+
+ticker = input(f"\n{users_name}, which ticker symbol(s) would you like to get data on?\
+\n-Please type the exact symbol and just the symbol i.e. 'aapl'\n\
+-For multiple ticker symbols please add a comma between tickers and do not add spaces, i.e. 'amzn,tsla,aapl,emms'\n") #^^ will need to data validate ^^ #maybe need to do a try and except block? #Want to make sure the ticker symbol entry desn't cause a great crash
 #will need to validate ^
 
-cat = input("Which category of stock data are you looking for?\
+cat = input(f"\n{users_name}, which category of stock data are you looking for, end-of-day or intraday?\n\
 ['eod' or 'intraday'] ") #^^ Will also need to data validate!
 
 # date = input("Please input a date in YYYY-MM-DD or ISO-8601\
 # format (e.g. 2020-05-21T00:00:00+0000), or leave blank ")
 
 params = {
-  'access_key': '3fe199c40e9ae83814d59ae34e9e80d1',
+  'access_key': f'{ms_access_key}',
   'symbols' : f'{ticker}'
 }
 
@@ -30,13 +43,6 @@ params = {
 #api_response = api_result.json() #run to json the api_result
 
 print("\n**Housekeeping Notice** This engine is currently landing\n\n")
-
-###CURRENT SPOT
-# merging_api_result = requests.get(f'http://api.marketstack.com/v1/{cat}/{date}?access_key=3fe199c40e9ae83814d59ae34e9e80d1&symbols={ticker}')
-# mergin_api_result = merging_api_result.json()
-
-# url_f_test = (f'http://api.marketstack.com/v1/{cat}/{ticker}')
-# print("F-String URL test\n\n" + url_f_test)
 
 test_r_o = requests.get(f'http://api.marketstack.com/v1/{cat}', params)
 test_json = test_r_o.json()
@@ -63,35 +69,32 @@ def df_to_sql():
 
   ##Create SQLAlchemy engine to connect to MySQL Database
   engine = create_engine(f"mysql+pymysql://{user}:{pw}@{host}/{db}")
-  table_name = input("What is the name of the table you'll save this as?")
+  table_name = input("\nWhat is the name of the table you'll save this as? ")
   table_options = ['fail', 'replace', 'append']
-  fail_replace_append = input(f"Would you like the 'if_exists' table setting be to [{table_options}]? (fail: fails; replace: replaces the existing table of same name; append: adds all data from the table to the table with the same name)"
+  table_options_plus = {"fail": f"if '{table_name}' already exists, it will fail to store the data",\
+  "replace": f"replaces the data from table '{table_name}', if '{table_name}' already exists",\
+  "append": f"appends all data from the current data frame to the table '{table_name}'. NOTE: you cannot append eod or intraday data to a table of the other kind [the data is organized differently and SQL will fail to INSERT it.]"}
+  fail_replace_append = input(f"\n{users_name}, what would you like the 'if_exists' table setting to be: '" + "' or '".join(table_options_plus.keys()) + f"'?\
+  \n\nRead this dictionary for more option info: \n{str(table_options_plus)}\n\n")
   if fail_replace_append in table_options:
     pass
   else:
     fail_replace_append = "fail"
-  df.to_sql(f"{table_name}", engine, if_exists = f"{fail_replace_append}", index = True, index_label = "index_label_test") #schema = None, if_exists = "fail", index = True, index_label = "index_label_test" ## ,chunksize=None, dtype= None, method = None)
+  print("\nBeginning data push..")
+  df.to_sql(f"{table_name}", engine, if_exists = f"{fail_replace_append}", index = True, index_label = "#") #schema = None, if_exists = "fail", index = True, index_label = "index_label_test" ## ,chunksize=None, dtype= None, method = None)
+  print("Completed data push attempt. Please check the MySQL server for results")
 
-if input("do you want to push this data to MySQL? ('y' or 'n')") == "y":
-  print("Data attempting to be pushed")
-  df_to_sql():
+if (input("do you want to push this data to MySQL? ('y' or 'n') ") == "y"):
+  df_to_sql()
 else:
   print("ok, data not being pushed")
 
 ###Extra Features##
 ##feature blocks###
 
-##Who is requesting the data?
-##Do you know your MarketStack API key? If no, we'll supply the house code
-#####
+#Pull stored db information here -->
+#pull_from_mysql_q = input("Would you like to pull the stock data from the db? ('y' or 'n') ")
 
-##Would you like to push the data to MySQL?
-##If so, would you like to 'replace', 'append', or 'fail'
-#####
-
-##Would you like to see what MySQL has stored? (pulling from db)
-##Which table & What is the database information? 
-#####
 
 
 
@@ -123,7 +126,8 @@ else:
 #data_df_2 = df_2.to_numpy() ##can iterate over the individual items
 
 
-
+## unsure if worked
+##variable_name = requests.get(f'http://api.marketstack.com/v1/{cat}/{date}?access_key=3fe199c40e9ae83814d59ae34e9e80d1&symbols={ticker}')
 
 
 ##Printing labelless data!#Just the data, I believe ((2 Options Below))
@@ -207,4 +211,4 @@ else:
 # soup = BeautifulSoup(api_result, 'lxml')
 # print(soup)
 
-print("COMPLETED. \nfinal line of code.")
+print("\nCOMPLETED. \nthis is the final line of code.")
