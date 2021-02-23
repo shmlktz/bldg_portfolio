@@ -6,7 +6,7 @@ window = tk.Tk()
 
 ##open links
 import webbrowser
-def runLink():
+def runLink(): ##_event = None):
     choose = random.randint(1,4)
     print(choose)
     if choose == 1:
@@ -25,6 +25,8 @@ bottomFrame.pack()
 for i in range(2):
     b = tk.Button(text ="[A Key]", master = topFrame, width = 16, height = 5, command = runLink) #command = helloCallBack)
     b.pack(side = "left")
+    ##Taking a jump at binding keys
+    #b.bind('a', lambda event: runLink())
     #
     b = tk.Button(text ="[B Key]", master = bottomFrame, width = 16, height = 5, command = runLink) #command = helloCallBack)
     b.pack(side = "left")
